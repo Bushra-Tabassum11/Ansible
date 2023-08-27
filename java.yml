@@ -1,0 +1,42 @@
+- name: Installing Maven on {{COMPONENT}}-{{ENV}} server 
+  ansible.builtin.package:
+    name: maven 
+    state: present  
+
+- name: Creating App User 
+  ansible.builtin.include_role:
+    name: common
+    tasks_from: create_user
+
+- name: Download and extracting {{ COMPONENT }}
+  ansible.builtin.include_role:
+    name: common
+    tasks_from: download_from_nexus  
+
+# - name: Generating {{COMPONENT}} artifacts
+#   ansible.builtin.shell: mvn clean package && mv target/{{COMPONENT}}-1.0.jar {{COMPONENT}}.jar
+#   args:
+#     chdir: /home/{{APPUSER}}/{{COMPONENT}}/
+
+- name: Configuring Service
+  ansible.builtin.include_role:
+    name: common
+    tasks_from: config_svc 
+
+- name: Configuring RSYSLOG
+  ansible.builtin.include_role:
+    name: elk
+    tasks_from: rsyslog
+
+- name: Configuring Beats
+  ansible.builtin.include_role:
+    name: elk
+    tasks_from: filebeat
+
+- name: Installing Node Exporter
+  ansible.builtin.include_role:
+    name: prometheus
+    tasks_from: node_exporter
+
+- name: Configuring Node Name Repo 
+  ansible.builtin.shell: set-hostname {{COMPONENT}}-{{ENV}}
